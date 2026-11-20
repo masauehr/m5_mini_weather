@@ -1,0 +1,8 @@
+# 実測データは手元のみ（公開リポジトリのため除外）
+data/*
+!data/.gitkeep
+.env
+.pio/
+.venv/
+__pycache__/
+.DS_Store
