@@ -10,6 +10,7 @@ CoreS3 + ENV III のファームウェア（PlatformIO / Arduino framework / M5U
 - SDカードに `/YYYYMMDD.csv` として追記（[データ仕様](../docs/data_format.md)）。読み取り失敗時は値を空欄で行を残す
 - 時刻: 起動時にRTCから復元。無効ならWi-Fi+NTPで同期してRTCへ保存し、Wi-Fiを切る
 
+- 記録間隔: 画面下部のボタンをタップして 10 → 30 → 60秒を切替（既定60秒・設定は保持・CSVに `interval_s` 列を記録）
 - BLE（NimBLE）: 現在値の通知と、日単位のログ取得（`DATE,YYYYMMDD`）。仕様は [data_format.md](../docs/data_format.md)
 
 ## 準備（macOS）
@@ -31,4 +32,5 @@ cp include/secrets.example.h include/secrets.h                     # 任意（NT
 2. `M5.Ex_I2C.getSDA()/getSCL()` でENV IIIが読めるか（読めなければ SDA=2, SCL=1 を直指定）
 3. SDカード（FAT32）への書き込み・ピン（SCK36/MISO35/MOSI37/CS4）
 4. 温度の自己加熱（本体を離したときとの差）
-5. BLE: nRF Connect で `M5MiniWeather` が見え、Current が1分ごとに通知されるか。次に `web/index.html`（Bluefy）でログ取得
+5. 記録間隔: 画面下部のボタン（INTERVAL ◯s）のタップで切り替わるか。反応する領域（y>=196）が実機のタッチ座標と合っているか。電源を入れ直しても保持されるか
+6. BLE: nRF Connect で `M5MiniWeather` が見え、Current が1分ごとに通知されるか。次に `web/index.html`（Bluefy）でログ取得

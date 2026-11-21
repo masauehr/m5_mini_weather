@@ -1,8 +1,9 @@
-// M5Stack CoreS3 + ENV III ミニ気象観測（Phase 1: 取得・表示・SD保存）
+// M5Stack CoreS3 + ENV III ミニ気象観測（Phase 1: 取得・表示・SD保存・BLE、記録間隔の切替）
 // ※ 実機未確認。I2Cピン・SDピンは公式情報に基づく暫定値。
 #include <M5Unified.h>
 #include <M5UnitENV.h>
 #include <NimBLEDevice.h>
+#include <Preferences.h>
 #include <SD.h>
 #include <SPI.h>
 #include <WiFi.h>
@@ -14,7 +15,13 @@
 #endif
 
 // ---- 設定 ----
-static const uint32_t INTERVAL_MS = 60 * 1000;  // 記録周期（1分）
+// 記録間隔のプリセット（画面下部のボタンをタップして切り替え。設定は電源を切っても保持）
+static const uint16_t INTERVALS_S[] = {10, 30, 60};
+static const int N_INTERVALS = sizeof(INTERVALS_S) / sizeof(INTERVALS_S[0]);
+static const int DEFAULT_INTERVAL_IDX = 2;  // 既定は60秒
+static const int BTN_Y = 196;               // この y 以下の領域だけタップに反応（誤操作防止）
+static int intervalIdx = DEFAULT_INTERVAL_IDX;
+static inline uint16_t intervalSec() { return INTERVALS_S[intervalIdx]; }
 static const char *TZ_JST = "JST-9";
 static const int SD_SCK = 36, SD_MISO = 35, SD_MOSI = 37, SD_CS = 4;  // CoreS3 のSDスロット
 
@@ -153,7 +160,7 @@ static void isoNow(char *buf, size_t n) {
 }
 
 // SD に1行追記（日付ごとのファイル）。読み取り失敗時は値を空欄にして行を残す
-static void appendCsv(const char *ts, bool ok, float temp, float hum, float pres) {
+static void appendCsv(const char *ts, bool ok, float temp, float hum, float pres) {  // interval_s 列も記録
   if (!sdOk) return;
   time_t t = time(nullptr);
   struct tm tmv;
@@ -163,11 +170,11 @@ static void appendCsv(const char *ts, bool ok, float temp, float hum, float pres
   bool isNew = !SD.exists(path);
   File f = SD.open(path, FILE_APPEND);
   if (!f) return;
-  if (isNew) f.println("timestamp,temp_c,humidity_pct,pressure_hpa,battery_pct");
+  if (isNew) f.println("timestamp,temp_c,humidity_pct,pressure_hpa,battery_pct,interval_s");
   if (ok) {
-    f.printf("%s,%.2f,%.1f,%.2f,%d\n", ts, temp, hum, pres, (int)M5.Power.getBatteryLevel());
+    f.printf("%s,%.2f,%.1f,%.2f,%d,%u\n", ts, temp, hum, pres, (int)M5.Power.getBatteryLevel(), intervalSec());
   } else {
-    f.printf("%s,,,,%d\n", ts, (int)M5.Power.getBatteryLevel());
+    f.printf("%s,,,,%d,%u\n", ts, (int)M5.Power.getBatteryLevel(), intervalSec());
   }
   f.close();
 }
@@ -190,8 +197,12 @@ static void draw(const char *ts, bool ok, float temp, float hum, float pres) {
     M5.Display.println("sensor error");
   }
   M5.Display.setTextSize(2);
-  M5.Display.setCursor(8, 200);
+  M5.Display.setCursor(8, 164);
   M5.Display.printf("SD:%s BAT:%d%%", sdOk ? "OK" : "NG", (int)M5.Power.getBatteryLevel());
+  // 記録間隔の切替ボタン（タップ領域）
+  M5.Display.drawRoundRect(8, BTN_Y, 304, 36, 8, WHITE);
+  M5.Display.setCursor(20, BTN_Y + 10);
+  M5.Display.printf("INTERVAL %us (tap)", intervalSec());
 }
 
 void setup() {
@@ -211,13 +222,30 @@ void setup() {
   if (!timeValid()) syncTimeByNtp();
   loadTimeFromRtc();
 
+  // 保存済みの記録間隔を読み込む
+  Preferences prefs;
+  prefs.begin("m5weather", true);
+  intervalIdx = prefs.getUChar("iv", DEFAULT_INTERVAL_IDX);
+  prefs.end();
+  if (intervalIdx < 0 || intervalIdx >= N_INTERVALS) intervalIdx = DEFAULT_INTERVAL_IDX;
+
   setupBle();
 }
 
 void loop() {
   M5.update();
+  // ボタン領域のタップで記録間隔を切り替え、すぐに1回測定して画面を更新する
+  auto touch = M5.Touch.getDetail();
+  if (touch.wasPressed() && touch.y >= BTN_Y) {
+    intervalIdx = (intervalIdx + 1) % N_INTERVALS;
+    Preferences prefs;
+    prefs.begin("m5weather", false);
+    prefs.putUChar("iv", (uint8_t)intervalIdx);
+    prefs.end();
+    lastMs = 0;
+  }
   uint32_t now = millis();
-  if (lastMs == 0 || now - lastMs >= INTERVAL_MS) {
+  if (lastMs == 0 || now - lastMs >= intervalSec() * 1000UL) {
     lastMs = now;
     bool ok = sht3x.update() && qmp.update();
     float temp = sht3x.cTemp, hum = sht3x.humidity, pres = qmp.pressure / 100.0f;  // Pa → hPa
@@ -230,9 +258,9 @@ void loop() {
     // 現在値をBLEで通知（ヘッダーと同じ列順のCSV 1行）
     char row[96];
     if (ok) {
-      snprintf(row, sizeof(row), "%s,%.2f,%.1f,%.2f,%d", ts, temp, hum, pres, (int)M5.Power.getBatteryLevel());
+      snprintf(row, sizeof(row), "%s,%.2f,%.1f,%.2f,%d,%u", ts, temp, hum, pres, (int)M5.Power.getBatteryLevel(), intervalSec());
     } else {
-      snprintf(row, sizeof(row), "%s,,,,%d", ts, (int)M5.Power.getBatteryLevel());
+      snprintf(row, sizeof(row), "%s,,,,%d,%u", ts, (int)M5.Power.getBatteryLevel(), intervalSec());
     }
     chCur->setValue(row);
     chCur->notify();

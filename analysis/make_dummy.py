@@ -35,7 +35,7 @@ def main():
     bat = np.clip(100 - np.arange(n) / 1440 * 12, 5, 100).astype(int)
 
     df = pd.DataFrame({"timestamp": idx, "temp_c": temp.round(2), "humidity_pct": hum.round(1),
-                       "pressure_hpa": pres.round(2), "battery_pct": bat})
+                       "pressure_hpa": pres.round(2), "battery_pct": bat, "interval_s": 60})
 
     # 意図的な不具合: 読み取り失敗（値が空欄の行）、行ごとの欠測、外れ値（スパイク）
     fail = rng.choice(n, size=max(3, n // 2000), replace=False)

@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 
 COLUMNS = ["temp_c", "humidity_pct", "pressure_hpa", "battery_pct"]
+OPTIONAL = ["interval_s"]  # 記録間隔[秒]。旧形式のCSVには無い
 
 
 def load_dir(path):
@@ -14,6 +15,6 @@ def load_dir(path):
     df = pd.concat((pd.read_csv(f) for f in files), ignore_index=True)
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True).dt.tz_convert("Asia/Tokyo")
     df = df.sort_values("timestamp").set_index("timestamp")
-    for c in COLUMNS:
+    for c in COLUMNS + [c for c in OPTIONAL if c in df.columns]:
         df[c] = pd.to_numeric(df[c], errors="coerce")
     return df
