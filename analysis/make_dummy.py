@@ -37,6 +37,11 @@ def main():
     df = pd.DataFrame({"timestamp": idx, "temp_c": temp.round(2), "humidity_pct": hum.round(1),
                        "pressure_hpa": pres.round(2), "battery_pct": bat, "interval_s": 60})
 
+    # マーク（「ここから測る」の印）: 1日目に3回、2日目に1回（再起動で番号が1に戻る想定）
+    df["mark"] = pd.array([pd.NA] * len(df), dtype="Int64")
+    for num, (day, h) in enumerate([(0, 8), (0, 12), (0, 18), (1, 9)], start=1):
+        df.loc[df.index[day * 1440 + h * 60], "mark"] = num if num < 4 else 1
+
     # 意図的な不具合: 読み取り失敗（値が空欄の行）、行ごとの欠測、外れ値（スパイク）
     fail = rng.choice(n, size=max(3, n // 2000), replace=False)
     df.loc[fail, ["temp_c", "humidity_pct", "pressure_hpa"]] = np.nan

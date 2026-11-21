@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 
 COLUMNS = ["temp_c", "humidity_pct", "pressure_hpa", "battery_pct"]
-OPTIONAL = ["interval_s"]  # 記録間隔[秒]。旧形式のCSVには無い
+OPTIONAL = ["interval_s", "mark"]  # 記録間隔[秒]・マーク番号。旧形式のCSVには無い
 
 
 def load_dir(path):

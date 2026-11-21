@@ -22,6 +22,14 @@ static const int DEFAULT_INTERVAL_IDX = 2;  // 既定は60秒
 static const int BTN_Y = 196;               // この y 以下の領域だけタップに反応（誤操作防止）
 static int intervalIdx = DEFAULT_INTERVAL_IDX;
 static inline uint16_t intervalSec() { return INTERVALS_S[intervalIdx]; }
+
+// マーク（「ここから測る」の印）。タップで1回測定し、その行の mark 列に通し番号（電源投入後の連番）を入れる
+static int markCount = 0;  // 電源投入後のマーク回数
+static int curMark = 0;    // 次に記録する行に付けるマーク番号（0=なし）
+static void markStr(char *buf, size_t n) {
+  if (curMark > 0) snprintf(buf, n, "%d", curMark);
+  else buf[0] = '\0';
+}
 static const char *TZ_JST = "JST-9";
 static const int SD_SCK = 36, SD_MISO = 35, SD_MOSI = 37, SD_CS = 4;  // CoreS3 のSDスロット
 
@@ -160,7 +168,7 @@ static void isoNow(char *buf, size_t n) {
 }
 
 // SD に1行追記（日付ごとのファイル）。読み取り失敗時は値を空欄にして行を残す
-static void appendCsv(const char *ts, bool ok, float temp, float hum, float pres) {  // interval_s 列も記録
+static void appendCsv(const char *ts, bool ok, float temp, float hum, float pres) {  // interval_s・mark 列も記録
   if (!sdOk) return;
   time_t t = time(nullptr);
   struct tm tmv;
@@ -170,11 +178,13 @@ static void appendCsv(const char *ts, bool ok, float temp, float hum, float pres
   bool isNew = !SD.exists(path);
   File f = SD.open(path, FILE_APPEND);
   if (!f) return;
-  if (isNew) f.println("timestamp,temp_c,humidity_pct,pressure_hpa,battery_pct,interval_s");
+  if (isNew) f.println("timestamp,temp_c,humidity_pct,pressure_hpa,battery_pct,interval_s,mark");
+  char mk[12];
+  markStr(mk, sizeof(mk));
   if (ok) {
-    f.printf("%s,%.2f,%.1f,%.2f,%d,%u\n", ts, temp, hum, pres, (int)M5.Power.getBatteryLevel(), intervalSec());
+    f.printf("%s,%.2f,%.1f,%.2f,%d,%u,%s\n", ts, temp, hum, pres, (int)M5.Power.getBatteryLevel(), intervalSec(), mk);
   } else {
-    f.printf("%s,,,,%d,%u\n", ts, (int)M5.Power.getBatteryLevel(), intervalSec());
+    f.printf("%s,,,,%d,%u,%s\n", ts, (int)M5.Power.getBatteryLevel(), intervalSec(), mk);
   }
   f.close();
 }
@@ -198,11 +208,14 @@ static void draw(const char *ts, bool ok, float temp, float hum, float pres) {
   }
   M5.Display.setTextSize(2);
   M5.Display.setCursor(8, 164);
-  M5.Display.printf("SD:%s BAT:%d%%", sdOk ? "OK" : "NG", (int)M5.Power.getBatteryLevel());
-  // 記録間隔の切替ボタン（タップ領域）
-  M5.Display.drawRoundRect(8, BTN_Y, 304, 36, 8, WHITE);
-  M5.Display.setCursor(20, BTN_Y + 10);
-  M5.Display.printf("INTERVAL %us (tap)", intervalSec());
+  M5.Display.printf("SD:%s BAT:%d%% M%d", sdOk ? "OK" : "NG", (int)M5.Power.getBatteryLevel(), markCount);
+  // 下部の2つのボタン（タップ領域）: 左=MARK（印を付けて測定）、右=記録間隔の切替
+  M5.Display.drawRoundRect(8, BTN_Y, 144, 36, 8, WHITE);
+  M5.Display.setCursor(48, BTN_Y + 10);
+  M5.Display.print("MARK");
+  M5.Display.drawRoundRect(160, BTN_Y, 152, 36, 8, WHITE);
+  M5.Display.setCursor(176, BTN_Y + 10);
+  M5.Display.printf("EVERY %us", intervalSec());
 }
 
 void setup() {
@@ -234,14 +247,21 @@ void setup() {
 
 void loop() {
   M5.update();
-  // ボタン領域のタップで記録間隔を切り替え、すぐに1回測定して画面を更新する
+  // 下部ボタンのタップ処理（どちらもすぐに1回測定して画面を更新する）
   auto touch = M5.Touch.getDetail();
   if (touch.wasPressed() && touch.y >= BTN_Y) {
-    intervalIdx = (intervalIdx + 1) % N_INTERVALS;
-    Preferences prefs;
-    prefs.begin("m5weather", false);
-    prefs.putUChar("iv", (uint8_t)intervalIdx);
-    prefs.end();
+    if (touch.x < 156) {
+      // 左: MARK。次の行にマーク番号を付ける
+      markCount++;
+      curMark = markCount;
+    } else {
+      // 右: 記録間隔を切り替える（設定は保持）
+      intervalIdx = (intervalIdx + 1) % N_INTERVALS;
+      Preferences prefs;
+      prefs.begin("m5weather", false);
+      prefs.putUChar("iv", (uint8_t)intervalIdx);
+      prefs.end();
+    }
     lastMs = 0;
   }
   uint32_t now = millis();
@@ -256,12 +276,15 @@ void loop() {
     appendCsv(ts, ok, temp, hum, pres);
 
     // 現在値をBLEで通知（ヘッダーと同じ列順のCSV 1行）
-    char row[96];
+    char row[104];
+    char mk[12];
+    markStr(mk, sizeof(mk));
     if (ok) {
-      snprintf(row, sizeof(row), "%s,%.2f,%.1f,%.2f,%d,%u", ts, temp, hum, pres, (int)M5.Power.getBatteryLevel(), intervalSec());
+      snprintf(row, sizeof(row), "%s,%.2f,%.1f,%.2f,%d,%u,%s", ts, temp, hum, pres, (int)M5.Power.getBatteryLevel(), intervalSec(), mk);
     } else {
-      snprintf(row, sizeof(row), "%s,,,,%d,%u", ts, (int)M5.Power.getBatteryLevel(), intervalSec());
+      snprintf(row, sizeof(row), "%s,,,,%d,%u,%s", ts, (int)M5.Power.getBatteryLevel(), intervalSec(), mk);
     }
+    curMark = 0;  // マークは1行だけに付ける
     chCur->setValue(row);
     chCur->notify();
   }

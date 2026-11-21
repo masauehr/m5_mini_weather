@@ -56,8 +56,8 @@ const log = m => { $('log').textContent = m + '\n' + $('log').textContent; };
 
 // 現在値（CSV 1行: timestamp,temp,hum,pres,battery）を画面へ
 function showCurrent(row) {
-  const [ts, t, h, p, b, iv] = row.split(',');
-  $('ts').textContent = ts;
+  const [ts, t, h, p, b, iv, mk] = row.split(',');
+  $('ts').textContent = ts + (mk ? '　★マーク' + mk : '');
   $('t').textContent = t || '--';
   $('h').textContent = h || '--';
   $('p').textContent = p || '--';

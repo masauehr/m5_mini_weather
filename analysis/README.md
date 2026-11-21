@@ -16,6 +16,7 @@ python3 -m venv ../.venv && ../.venv/bin/pip install -r requirements.txt
 .venv/bin/python analysis/make_dummy.py              # ダミー7日分 → data/dummy/（git除外）
 .venv/bin/python analysis/quality.py data/dummy      # 品質チェック
 .venv/bin/python analysis/report.py data/dummy       # 日別統計・グラフ → data/report/
+.venv/bin/python analysis/segments.py data/dummy     # マークごとの区間集計 → data/segments/
 
 # 気象庁AMeDASとの比較
 .venv/bin/python analysis/compare_jma.py --find 地点名                      # 地点IDを検索
@@ -29,6 +30,7 @@ python3 -m venv ../.venv && ../.venv/bin/pip install -r requirements.txt
 | `make_dummy.py` | 合成データ生成。欠測・読み取り失敗・外れ値・気圧の急降下を意図的に混ぜる（乱数・実測ではない） |
 | `loader.py` | CSV結合の共通処理 |
 | `quality.py` | 欠測区間（`interval_s` 列があれば直前の行の記録間隔で判定。間隔が混在しても正しく数える）・取得率・読み取り失敗・範囲外・スパイク候補・重複の検出 |
+| `segments.py` | マーク（mark列）で記録を区間に分け、区間ごとの統計表と図を出す。移動式で場所ごとに比べる用 |
 | `compare_jma.py` | 最寄りのAMeDAS（10分値）と突き合わせる。気温・湿度・気圧のバイアス/差の標準偏差/RMSE/相関と、時刻別の気温差（日射・自己加熱の確認）をグラフ化 |
 | `report.py` | 日別統計（CSV）、時系列・日変化グラフ、気圧3時間変化と急降下の検出 |
 
