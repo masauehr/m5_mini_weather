@@ -3,7 +3,7 @@
 実測ではなく乱数で作った値。意図的に欠測・欠損値・外れ値・気圧の急降下を混ぜる。
 出力: data/dummy/YYYYMMDD.csv（data/ はgit除外）
 
-使い方: python analysis/make_dummy.py [日数(既定7)] [出力先(既定 data/dummy)]
+使い方: python analysis/make_dummy.py [日数(既定7)] [出力先(既定 data/dummy)] [開始日 YYYY-MM-DD(既定 2026-11-01)]
 """
 import sys
 from pathlib import Path
@@ -16,9 +16,10 @@ def main():
     days = int(sys.argv[1]) if len(sys.argv) > 1 else 7
     out = Path(sys.argv[2]) if len(sys.argv) > 2 else Path(__file__).resolve().parent.parent / "data" / "dummy"
     out.mkdir(parents=True, exist_ok=True)
+    start = sys.argv[3] if len(sys.argv) > 3 else "2026-11-01"
     rng = np.random.default_rng(42)
 
-    idx = pd.date_range("2026-11-01", periods=days * 1440, freq="1min", tz="Asia/Tokyo")
+    idx = pd.date_range(start, periods=days * 1440, freq="1min", tz="Asia/Tokyo")
     hour = np.asarray(idx.hour + idx.minute / 60, dtype=float)
     n = len(idx)
 
