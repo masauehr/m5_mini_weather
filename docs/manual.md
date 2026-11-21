@@ -8,6 +8,7 @@ M5Stack CoreS3 + ENV III で気温・湿度・気圧を測り、スマホへ転�
 - 2026-11-21 開始。Phase 0完了。**Phase 1のファームウェアを実装し、PlatformIOでビルド成功**。実機未入手のため動作確認は未実施。
 - スマホ: iPhone 15 Pro。BLE（NimBLE）で現在値通知＋日単位ログ取得。受信は Bluefy で `web/index.html` を開く（Web BluetoothはHTTPS必須。GitHub Pages配信: https://masauehr.github.io/m5_mini_weather/web/）。Wi-Fiは起動時のNTPのみ。
 - 気象庁比較: AMeDASの過去データは約1週間強しか取得できないため、実測は期間内に `analysis/compare_jma.py` で取得・キャッシュする。地点IDと標高は引数で渡しリポジトリに書かない。
+- 百葉箱: IIJ「MITSUHA DIY 簡易百葉箱」（記事＋製作ガイドPDF）に準拠。長鉢5・6号と鉢皿5・6号の二重筒＋ステンレスボルト、約1,700円（2021年）。ポール固定を基本（スタンド版は風で倒れるため風のない場所のみ）。ENV IIIは内筒内のポールに固定し、ケーブルは下皿との隙間から屋内へ。
 - 屋外化: 公称動作温度が 0〜40℃（ENV IIIは0〜60℃の記載もあり）で、氷点下・炎天下は仕様外。センサーのみ百葉箱で屋外・本体は屋内（案A）から段階的に進める（Stage 0〜3）。
 - 開発環境: PlatformIO（Arduino + M5Unified）。手順は `firmware/README.md`。初回ビルドはツールチェーン取得で約12分・約5GB。
 
@@ -39,3 +40,4 @@ M5Stack CoreS3 + ENV III で気温・湿度・気圧を測り、スマホへ転�
 - 2026-11-21: Phase 3の解析スクリプト（analysis/: make_dummy・loader・quality・report）をダミーデータで実装。
 - 2026-11-21: 気象庁（AMeDAS）との比較スクリプト `analysis/compare_jma.py` を追加（自己一致テストで検証）。
 - 2026-11-21: Phase 4（防水・屋外化）の設計書 `docs/waterproof.md` を作成（構成案比較・百葉箱・防水配線・電源・試験計画）。
+- 2026-11-21: 百葉箱の設計をIIJの製作ガイド（PDF）に沿って具体化（部材・手順・ENV III向け変更点）。
