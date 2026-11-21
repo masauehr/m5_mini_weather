@@ -29,7 +29,7 @@ timestamp,temp_c,humidity_pct,pressure_hpa,battery_pct
 
 ## BLE 仕様（Phase 2）
 
-スマホは iPhone 15 Pro。Safari は Web Bluetooth 非対応のため、**Bluefy**（App Store）で `web/index.html` を開いて使う。
+スマホは iPhone 15 Pro。Safari は Web Bluetooth 非対応のため、**Bluefy**（App Store）で `web/index.html`（公開URL: <https://masauehr.github.io/m5_mini_weather/web/>）を開いて使う。
 
 - デバイス名: `M5MiniWeather`（アドバタイズにサービスUUIDを含める）
 - 文字コード: UTF-8、1通知 = CSV 1行（改行なし）。MTU は iOS が自動で拡張する（要求185）

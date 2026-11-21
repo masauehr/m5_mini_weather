@@ -6,7 +6,7 @@ M5Stack CoreS3 + ENV III で気温・湿度・気圧を測り、スマホへ転�
 ## 現在の状態
 
 - 2026-11-21 開始。Phase 0完了。**Phase 1のファームウェアを実装し、PlatformIOでビルド成功**。実機未入手のため動作確認は未実施。
-- スマホ: iPhone 15 Pro。BLE（NimBLE）で現在値通知＋日単位ログ取得。受信は Bluefy で `web/index.html` を開く（Web BluetoothはHTTPS必須のためGitHub Pages配信を想定）。Wi-Fiは起動時のNTPのみ。
+- スマホ: iPhone 15 Pro。BLE（NimBLE）で現在値通知＋日単位ログ取得。受信は Bluefy で `web/index.html` を開く（Web BluetoothはHTTPS必須。GitHub Pages配信: https://masauehr.github.io/m5_mini_weather/web/）。Wi-Fiは起動時のNTPのみ。
 - 開発環境: PlatformIO（Arduino + M5Unified）。手順は `firmware/README.md`。初回ビルドはツールチェーン取得で約12分・約5GB。
 
 ## フェーズ
@@ -33,3 +33,4 @@ M5Stack CoreS3 + ENV III で気温・湿度・気圧を測り、スマホへ転�
 - 2026-11-21: プロジェクト作成・MD一式を整備・GitHub公開。
 - 2026-11-21: Phase 1ファームウェア実装（実機なしでビルドまで）。
 - 2026-11-21: Phase 2のBLE仕様・ファームウェア・web/index.htmlを実装（実機なしでビルドまで）。
+- 2026-11-21: GitHub Pages（mainルート・.nojekyll）を有効化し、受信ページを公開。

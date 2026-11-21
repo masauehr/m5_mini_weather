@@ -30,7 +30,7 @@ CoreS3 + ENV III ──(BLE)──▶ スマホ ──▶ CSV ──▶ 解析�
 | [docs/waterproof.md](docs/waterproof.md) | 防水・日射対策の設計メモ（将来拡張） |
 | [docs/references.md](docs/references.md) | 参考記事・公式資料 |
 | `firmware/` | CoreS3 のファームウェア（PlatformIO。取得・SD保存・BLE） |
-| `web/` | iPhone（Bluefy）用のBLE受信ページ |
+| `web/` | iPhone（Bluefy）用のBLE受信ページ。公開URL: <https://masauehr.github.io/m5_mini_weather/web/> |
 | `analysis/` | 解析スクリプト・Notebook（Phase 3 で作成） |
 | `data/` | 実測データ置き場（**git除外**） |
 
