@@ -6,16 +6,16 @@
 
 - [x] プロジェクト作成・MD整備・GitHub公開
 - [ ] 機材の手配確認（CoreS3 / ENV III / microSD / USB-Cケーブル）
-- [ ] 開発環境の決定（候補: PlatformIO or Arduino IDE。下記「未決事項」）
+- [x] 開発環境の決定: **PlatformIO（Arduino framework + M5Unified）**。macOSでビルド成功を確認（2026-11-21）
 
 ## Phase 1: データ取得（最優先）
 
 目標: CoreS3 + ENV III で温度・湿度・気圧を測り、画面表示とSD保存ができる。
 
-- [ ] ENV III（SHT30 + QMP6988）の読み取り（I2C Port A）
-- [ ] 画面に現在値表示
-- [ ] 1分ごとにSDカードへCSV追記（[data_format.md](docs/data_format.md)）
-- [ ] RTC/NTPによる時刻設定（時刻が無い記録は解析に使えない）
+- [x] ENV III（SHT30 + QMP6988）の読み取り（I2C Port A）※コード実装・ビルド済み、**実機未確認**
+- [x] 画面に現在値表示 ※実機未確認
+- [x] 1分ごとにSDカードへCSV追記 ※実機未確認（[data_format.md](docs/data_format.md)）
+- [x] RTC/NTPによる時刻設定 ※実機未確認（時刻が無い記録は解析に使えない）
 - [ ] 24時間連続稼働で欠測なし
 
 完了条件: 24時間分のCSVが欠測なく取れ、PCで開ける。
@@ -51,7 +51,6 @@
 
 | 項目 | 候補 | 判断材料 |
 |---|---|---|
-| 開発環境 | PlatformIO / Arduino IDE | M5Unified が使えれば両方可 |
 | スマホ転送方式 | BLE / Wi-Fi | iPhone/Android どちらを使うか。iPhone の Safari は Web Bluetooth 非対応のため専用アプリや汎用BLEアプリが必要 |
 | スマホ側アプリ | 汎用BLEアプリ / 自作 | Phase 2 で決める |
 | ライセンス | MIT など | 公開前に決める |
