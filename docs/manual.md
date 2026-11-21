@@ -8,6 +8,7 @@ M5Stack CoreS3 + ENV III で気温・湿度・気圧を測り、スマホへ転�
 - 2026-11-21 開始。Phase 0完了。**Phase 1のファームウェアを実装し、PlatformIOでビルド成功**。実機未入手のため動作確認は未実施。
 - スマホ: iPhone 15 Pro。BLE（NimBLE）で現在値通知＋日単位ログ取得。受信は Bluefy で `web/index.html` を開く（Web BluetoothはHTTPS必須。GitHub Pages配信: https://masauehr.github.io/m5_mini_weather/web/）。Wi-Fiは起動時のNTPのみ。
 - 気象庁比較: AMeDASの過去データは約1週間強しか取得できないため、実測は期間内に `analysis/compare_jma.py` で取得・キャッシュする。地点IDと標高は引数で渡しリポジトリに書かない。
+- 屋外化: 公称動作温度が 0〜40℃（ENV IIIは0〜60℃の記載もあり）で、氷点下・炎天下は仕様外。センサーのみ百葉箱で屋外・本体は屋内（案A）から段階的に進める（Stage 0〜3）。
 - 開発環境: PlatformIO（Arduino + M5Unified）。手順は `firmware/README.md`。初回ビルドはツールチェーン取得で約12分・約5GB。
 
 ## フェーズ
@@ -18,7 +19,7 @@ M5Stack CoreS3 + ENV III で気温・湿度・気圧を測り、スマホへ転�
 | 1 | データ取得（ENV III読取・画面表示・SD保存・時刻） | 実装・ビルド済み（実機未確認） |
 | 2 | スマホ転送（BLE優先・Wi-Fi代替） | 実装・ビルド済み（実機未確認） |
 | 3 | データ解析（日変化・気圧変化・気象庁比較・自己加熱評価） | 品質チェック・日別統計・グラフを実装（ダミーデータで確認・実測未検証）。気象庁（AMeDAS）比較スクリプトも実装・自己一致テスト済み。補正・自己加熱評価は実測後 |
-| 4 | 防水・日射遮蔽・電源の屋外化 | 未着手 |
+| 4 | 防水・日射遮蔽・電源の屋外化 | **設計済み**（`docs/waterproof.md`）・屋外試験は未実施 |
 
 ## 要点
 
@@ -37,3 +38,4 @@ M5Stack CoreS3 + ENV III で気温・湿度・気圧を測り、スマホへ転�
 - 2026-11-21: GitHub Pages（mainルート・.nojekyll）を有効化し、受信ページを公開。
 - 2026-11-21: Phase 3の解析スクリプト（analysis/: make_dummy・loader・quality・report）をダミーデータで実装。
 - 2026-11-21: 気象庁（AMeDAS）との比較スクリプト `analysis/compare_jma.py` を追加（自己一致テストで検証）。
+- 2026-11-21: Phase 4（防水・屋外化）の設計書 `docs/waterproof.md` を作成（構成案比較・百葉箱・防水配線・電源・試験計画）。
