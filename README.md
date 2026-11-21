@@ -5,7 +5,7 @@
 M5Stack **CoreS3** と **ENV III** センサーで作る、ミニ気象観測所。
 気温・湿度・気圧を測り、**スマホへ転送**して**データ解析**に使う。最終的には**防水仕様**の屋外観測機に拡張する。
 
-> 状態: **Phase 0（企画・設計）** — 2026-11-21 開始。コードは未着手。
+> 状態: Phase 1〜2 のコードを実装し、ビルド成功（2026-11-21）。**実機未確認**（実機待ち）。
 > 計画の詳細は [plan.md](plan.md)、機材は [docs/hardware.md](docs/hardware.md) を参照。
 
 ## 目的
@@ -29,7 +29,8 @@ CoreS3 + ENV III ──(BLE)──▶ スマホ ──▶ CSV ──▶ 解析�
 | [docs/data_format.md](docs/data_format.md) | 測定値・CSV・BLEの仕様 |
 | [docs/waterproof.md](docs/waterproof.md) | 防水・日射対策の設計メモ（将来拡張） |
 | [docs/references.md](docs/references.md) | 参考記事・公式資料 |
-| `firmware/` | CoreS3 のファームウェア（Phase 1 で作成） |
+| `firmware/` | CoreS3 のファームウェア（PlatformIO。取得・SD保存・BLE） |
+| `web/` | iPhone（Bluefy）用のBLE受信ページ |
 | `analysis/` | 解析スクリプト・Notebook（Phase 3 で作成） |
 | `data/` | 実測データ置き場（**git除外**） |
 

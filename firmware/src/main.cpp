@@ -2,6 +2,7 @@
 // ※ 実機未確認。I2Cピン・SDピンは公式情報に基づく暫定値。
 #include <M5Unified.h>
 #include <M5UnitENV.h>
+#include <NimBLEDevice.h>
 #include <SD.h>
 #include <SPI.h>
 #include <WiFi.h>
@@ -17,9 +18,78 @@ static const uint32_t INTERVAL_MS = 60 * 1000;  // 記録周期（1分）
 static const char *TZ_JST = "JST-9";
 static const int SD_SCK = 36, SD_MISO = 35, SD_MOSI = 37, SD_CS = 4;  // CoreS3 のSDスロット
 
+static bool sdOk = false;
+
+// ---- BLE（仕様は docs/data_format.md）----
+#define SVC_UUID "b5dcd81f-8818-4a59-8055-4be29e1ab1ab"
+#define CUR_UUID "93201d96-eec6-4b2f-a728-2fd5f41d8512"
+#define CTL_UUID "cfb36b51-d385-497f-ad44-3f4b9bf0e9b6"
+#define LOG_UUID "d6ee814f-18a7-4682-9420-06a34fc0a78a"
+
+static NimBLECharacteristic *chCur = nullptr;
+static NimBLECharacteristic *chLog = nullptr;
+static volatile bool logRequested = false;  // コールバック内では重い処理をせずloopで実行
+static char logDate[9] = "";
+
+class CtlCallbacks : public NimBLECharacteristicCallbacks {
+  void onWrite(NimBLECharacteristic *c, NimBLEConnInfo &) override {
+    std::string v = c->getValue();
+    // "DATE,YYYYMMDD" のみ受け付ける
+    if (v.size() == 13 && v.compare(0, 5, "DATE,") == 0) {
+      strncpy(logDate, v.c_str() + 5, 8);
+      logDate[8] = '\0';
+      logRequested = true;
+    }
+  }
+};
+
+class ServerCallbacks : public NimBLEServerCallbacks {
+  void onDisconnect(NimBLEServer *, NimBLEConnInfo &, int) override {
+    NimBLEDevice::startAdvertising();  // 切断後に再アドバタイズ
+  }
+};
+
+static void setupBle() {
+  NimBLEDevice::init("M5MiniWeather");
+  NimBLEDevice::setMTU(185);
+  NimBLEServer *server = NimBLEDevice::createServer();
+  server->setCallbacks(new ServerCallbacks());
+  NimBLEService *svc = server->createService(SVC_UUID);
+  chCur = svc->createCharacteristic(CUR_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+  NimBLECharacteristic *ctl = svc->createCharacteristic(CTL_UUID, NIMBLE_PROPERTY::WRITE);
+  ctl->setCallbacks(new CtlCallbacks());
+  chLog = svc->createCharacteristic(LOG_UUID, NIMBLE_PROPERTY::NOTIFY);
+  svc->start();
+  NimBLEAdvertising *adv = NimBLEDevice::getAdvertising();
+  adv->addServiceUUID(SVC_UUID);
+  adv->start();
+}
+
+// 指定日のCSVを1行ずつ通知し、最後に END（ファイルなしは NOFILE）
+static void streamLog(const char *date) {
+  char path[24];
+  snprintf(path, sizeof(path), "/%s.csv", date);
+  if (!sdOk || !SD.exists(path)) {
+    chLog->setValue("NOFILE");
+    chLog->notify();
+    return;
+  }
+  File f = SD.open(path, FILE_READ);
+  while (f && f.available()) {
+    String line = f.readStringUntil('\n');
+    line.trim();
+    if (line.length() == 0) continue;
+    chLog->setValue(std::string(line.c_str()));
+    chLog->notify();
+    delay(15);  // 通知の取りこぼし防止
+  }
+  if (f) f.close();
+  chLog->setValue("END");
+  chLog->notify();
+}
+
 SHT3X sht3x;
 QMP6988 qmp;
-static bool sdOk = false;
 static uint32_t lastMs = 0;
 
 // 時刻が有効か（RTC未設定だと2000年付近になる）
@@ -140,6 +210,8 @@ void setup() {
   loadTimeFromRtc();
   if (!timeValid()) syncTimeByNtp();
   loadTimeFromRtc();
+
+  setupBle();
 }
 
 void loop() {
@@ -154,6 +226,20 @@ void loop() {
     Serial.printf("%s,%.2f,%.1f,%.2f ok=%d\n", ts, temp, hum, pres, ok);
     draw(ts, ok, temp, hum, pres);
     appendCsv(ts, ok, temp, hum, pres);
+
+    // 現在値をBLEで通知（ヘッダーと同じ列順のCSV 1行）
+    char row[96];
+    if (ok) {
+      snprintf(row, sizeof(row), "%s,%.2f,%.1f,%.2f,%d", ts, temp, hum, pres, (int)M5.Power.getBatteryLevel());
+    } else {
+      snprintf(row, sizeof(row), "%s,,,,%d", ts, (int)M5.Power.getBatteryLevel());
+    }
+    chCur->setValue(row);
+    chCur->notify();
+  }
+  if (logRequested) {
+    logRequested = false;
+    streamLog(logDate);
   }
   delay(100);
 }

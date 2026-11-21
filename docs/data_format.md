@@ -27,17 +27,29 @@ timestamp,temp_c,humidity_pct,pressure_hpa,battery_pct
 - センサー読み取り失敗時は値を空欄にして行は残す（欠測と区別するため）。
 - ファイルの1行目はヘッダー。新規ファイル作成時のみ書く。
 
-## BLE（Phase 2 で確定）
+## BLE 仕様（Phase 2）
 
-暫定案:
+スマホは iPhone 15 Pro。Safari は Web Bluetooth 非対応のため、**Bluefy**（App Store）で `web/index.html` を開いて使う。
 
-| 項目 | 内容 |
+- デバイス名: `M5MiniWeather`（アドバタイズにサービスUUIDを含める）
+- 文字コード: UTF-8、1通知 = CSV 1行（改行なし）。MTU は iOS が自動で拡張する（要求185）
+
+| 種別 | UUID | 属性 | 内容 |
+|---|---|---|---|
+| Service | `b5dcd81f-8818-4a59-8055-4be29e1ab1ab` | - | 気象観測サービス |
+| Current | `93201d96-eec6-4b2f-a728-2fd5f41d8512` | Read / Notify | 現在値（CSV 1行。1分ごとに更新・通知） |
+| LogControl | `cfb36b51-d385-497f-ad44-3f4b9bf0e9b6` | Write | コマンド（下記） |
+| LogData | `d6ee814f-18a7-4682-9420-06a34fc0a78a` | Notify | ログ行。末尾に `END`（該当日なしは `NOFILE`） |
+
+### コマンド（LogControl に書き込む）
+
+| コマンド | 動作 |
 |---|---|
-| デバイス名 | `M5MiniWeather` |
-| 通信 | GATT Notify（現在値）＋ログ取得用Characteristic |
-| ペイロード | 上記CSV 1行相当（UTF-8）または固定長バイナリ |
+| `DATE,YYYYMMDD` | その日のCSV（ヘッダー行含む）を LogData に1行ずつ通知し、最後に `END` |
 
-UUID・分割送信（MTU）・ログ再送の仕様は Phase 2 で決めて、ここに追記する。
+- 取得は日単位。スマホ側で日付ごとのCSVを結合する。
+- 送信中は測定を一時停止する（1日分で十数秒）。
+- 認証・暗号化は未導入（Phase 2 後半で検討）。通知の内容は気象値のみで、位置情報は含めない。
 
 ## 取り扱い
 

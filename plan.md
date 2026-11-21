@@ -24,9 +24,9 @@
 
 目標: 測定値をスマホで受け取れる。
 
-- [ ] BLE GATT（Notify）で現在値を送信
-- [ ] スマホ側の受信確認（まず汎用BLEアプリで確認）
-- [ ] 溜めたログのスマホ取り込み（切断中の分を後から送る）
+- [x] BLE GATT（Notify）で現在値を送信 ※実装・ビルド済み、実機未確認（仕様は[data_format.md](docs/data_format.md)）
+- [ ] スマホ側の受信確認（nRF Connect等の汎用BLEアプリ、次に `web/index.html` を Bluefy で）
+- [x] 溜めたログのスマホ取り込み（日単位 `DATE,YYYYMMDD`）※実装済み・実機未確認
 - [ ] 代替案の評価: Wi-Fi経由（HTTP/MQTT）、SDカードを抜いて取り込む
 
 完了条件: スマホにCSVとして保存できる。
@@ -51,8 +51,7 @@
 
 | 項目 | 候補 | 判断材料 |
 |---|---|---|
-| スマホ転送方式 | BLE / Wi-Fi | iPhone/Android どちらを使うか。iPhone の Safari は Web Bluetooth 非対応のため専用アプリや汎用BLEアプリが必要 |
-| スマホ側アプリ | 汎用BLEアプリ / 自作 | Phase 2 で決める |
+| スマホ側アプリ | Bluefy＋HTML（暫定採用） / 自作iOSアプリ | iPhone 15 Pro。HTTPS配信が必要（GitHub Pages）。使い勝手に不満が出たら自作を検討 |
 | ライセンス | MIT など | 公開前に決める |
 
 ## リスク
